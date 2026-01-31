@@ -1,0 +1,44 @@
+name: Build APK
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04 # Barqaror versiyaga qaytamiz
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential git ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev openjdk-17-jdk
+          pip install --upgrade pip
+          pip install Cython==0.29.33 kivy buildozer
+
+      - name: Accept Android SDK Licenses
+        run: |
+          # SDK litsenziyalarini majburan qabul qilish
+          mkdir -p ~/.android
+          touch ~/.android/repositories.cfg
+          # Buildozer o'zi SDKni yuklaguncha kutmay, litsenziyalarni oldindan tasdiqlaymiz
+          export PATH=$PATH:$HOME/.local/bin
+          buildozer android debug --help # Bu buildozerni uyg'otadi
+
+      - name: Final Build
+        run: |
+          export PATH=$PATH:$HOME/.local/bin
+          # "yes" buyrug'ini yanada aqlli usulda ishlatamiz
+          yes y | buildozer android debug || buildozer android debug
+        env:
+          ACCEPT_SDK_LICENSE: "yes"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: qasos-apk
+          path: bin/*.apk
